@@ -1,69 +1,63 @@
-#### Esta primera parte es tecnicamente configurable, pero no se recomienda.
+# Makefile Principal Dinámico
 
-# Nombres de las librerías (sin prefijo 'lib' y sin extensión '.a')
-LIB_NAME = cadenas arreglos
+# Detectar librerías en libs/
+LIB_DIRS := $(wildcard libs/*)
 
-# Directorios de los programas
-PROG_DIRS = ejercicio1 ejercicio2 ejercicio3
+# Detectar ejercicios en ejercicios/
+EX_DIRS := $(wildcard ejercicios/*)
 
-#### A partir de acá el es la parte mágica.
+.PHONY: all librerias clean run test $(EX_DIRS) $(LIB_DIRS)
 
-# Compilador
-CC = gcc
+all: librerias $(EX_DIRS)
 
-# Opciones de compilación
-CFLAGS = -Wall -Wextra -pedantic -g
+librerias: $(LIB_DIRS)
 
-# Directorios de las librerías
-LIB_DIR = $(addprefix ../,$(LIB_NAME))
+# Regla para compilar cada librería de forma independiente si tiene un Makefile
+$(LIB_DIRS):
+	@if [ -f $@/Makefile ]; then \
+		echo "Compilando librería en $@..."; \
+		$(MAKE) -C $@ || exit 1; \
+	fi
 
-# Archivos de las librerías estáticas
-LIBRARY = $(addprefix -l,$(LIB_NAME))
-LIBRARY_DIRS = $(addprefix -L,$(LIB_DIR))
+# Regla para compilar cada ejercicio, asegurando que primero se compilen las librerías
+$(EX_DIRS): librerias
+	@if [ -f $@/Makefile ]; then \
+		echo "Compilando ejercicio en $@..."; \
+		$(MAKE) -C $@ || exit 1; \
+	fi
 
+run: librerias
+	@echo "Ejecutando programas de ejercicios..."
+	@for dir in $(EX_DIRS); do \
+		if [ -f $$dir/Makefile ]; then \
+			echo "--- Ejecutando $$dir ---"; \
+			$(MAKE) -C $$dir run || exit 1; \
+		fi; \
+	done
 
-# Objetivos para compilar todos los programas y las librerías
-.PHONY: all
-all: librerias $(PROG_DIRS)
+test: librerias
+	@echo "Ejecutando pruebas de librerías..."
+	@for dir in $(LIB_DIRS); do \
+		if [ -f $$dir/Makefile ]; then \
+			echo "--- Probando librería $$dir ---"; \
+			$(MAKE) -C $$dir test || exit 1; \
+		fi; \
+	done
+	@echo "Ejecutando pruebas de ejercicios..."
+	@for dir in $(EX_DIRS); do \
+		if [ -f $$dir/Makefile ]; then \
+			echo "--- Probando ejercicio $$dir ---"; \
+			$(MAKE) -C $$dir test || exit 1; \
+		fi; \
+	done
 
-# Ejecutar programas para cada directorio en PROG_DIRS
-.PHONY: run
-run: $(PROG_DIRS)
-	@echo "Ejecutando programas..."
-	$(foreach prog_dir, $(PROG_DIRS), $(MAKE) -C $(prog_dir) run;)
-
-# Compilar las librerías estáticas
-.PHONY: librerias
-librerias: 
-	@echo "Compilando librerías..."
-	@echo "Cadenas Seguras"
-	$(MAKE) -C cadenas
-	@echo "Arreglos"
-	$(MAKE) -C arreglos
-
-
-# Regla para compilar cada programa
-$(PROG_DIRS): librerias
-	@echo "Compilando programa en $@"
-	$(MAKE) -C $@
-
-# Limpieza generales de todos los programas y librerías
-.PHONY: clean
 clean:
-	@echo "Limpiando todos los programas y librerías..."
-	$(MAKE) -C cadenas clean
-	$(MAKE) -C arreglos clean
-	$(MAKE) -C ejercicio2 clean
-	$(MAKE) -C ejercicio3 clean
+	@echo "Limpiando todos los ejecutables, librerías estáticas y archivos objeto..."
+	@for dir in $(LIB_DIRS) $(EX_DIRS); do \
+		if [ -f $$dir/Makefile ]; then \
+			$(MAKE) -C $$dir clean; \
+		fi; \
+	done
 
-
-# Ejecutar pruebas para un programa específico (ejemplo: ejercicio2)
-.PHONY: test
-test: 
-	@echo "Ejecutando pruebas..."
-	@echo "Cadenas Seguras"
-	$(MAKE) -C cadenas test
-	@echo "Arreglos"
-	$(MAKE) -C arreglos test
-	$(foreach prog_dir, $(PROG_DIRS), $(MAKE) -C $(prog_dir) test;)
-
+# Incluir personalizaciones locales si existen
+-include local.mk

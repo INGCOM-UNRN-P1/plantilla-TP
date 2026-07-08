@@ -1,15 +1,14 @@
 # Variables generales
-CC = gcc
-CFLAGS = -Wall -Wextra -g
+CC ?= gcc
+CFLAGS ?= -Wall -Wextra -g
 
-# Archivos comunes, este es el lugar para cambiar el nombre
-# o agregar más archivos a la compilación.
-SRCS = arreglos.c
-HDRS = arreglos.h
+# Archivos comunes, se autodetectan los .c y .h
+SRCS = $(filter-out prueba.c, $(wildcard *.c))
+HDRS = $(wildcard *.h)
 
-# Objetivos
-LIBRARY_NAME = libarreglos.a
-PROG_TARGET = main_bin
+# Nombre de la librería estática (se deduce del nombre de la carpeta)
+LIB_NAME := $(notdir $(CURDIR))
+LIBRARY_NAME = lib$(LIB_NAME).a
 
 # Archivos para tests
 TEST_TARGET = test_bin
@@ -24,33 +23,30 @@ all: $(LIBRARY_NAME) $(TEST_TARGET)
 
 # Crear la librería estática .a
 $(LIBRARY_NAME): $(OBJS)
-	@echo "generando librería estática $@"
+	@echo "Generando librería estática $@"
 	ar rcs $@ $^
 
 # Compilar el ejecutable de pruebas
 $(TEST_TARGET): $(TEST_OBJS)
-	@echo "compilando $@"
+	@echo "Compilando $@"
 	$(CC) $(CFLAGS) -o $@ $^
 
 # Regla genérica para compilar archivos .o a partir de .c
 %.o: %.c $(HDRS)
-	@echo "compilando $<"
+	@echo "Compilando $<"
 	$(CC) $(CFLAGS) -c $<
 
-# Ejecutar el programa principal (si fuera necesario)
-.PHONY: run
-run: $(PROG_TARGET)
-	@echo "ejecutando"
-	./$(PROG_TARGET)
-
-# Ejecutar las pruebas (nuevo nombre para evitar conflictos)
-.PHONY: probar
+# Ejecutar las pruebas
+.PHONY: test
 test: $(TEST_TARGET)
-	@echo "probando"
+	@echo "Probando librería..."
 	./$(TEST_TARGET)
 
 # Limpiar archivos objeto y ejecutables
 .PHONY: clean
 clean:
-	@echo "limpiando"
-	rm -f $(OBJS) $(TEST_OBJS) $(LIBRARY_NAME) $(TEST_TARGET)
+	@echo "Limpiando..."
+	rm -f *.o $(LIBRARY_NAME) $(TEST_TARGET)
+
+# Incluir personalizaciones locales si existen
+-include local.mk

@@ -1,20 +1,114 @@
-# Plantilla-TP
+# Plantilla-TP (Estructura Mejorada)
 
-Basado en el proyecto para el TP7-2024, `struct` y estructuras.
+Este proyecto está preparado para gestionar de forma dinámica ejercicios y librerías de programación 1.
 
-Se aceptan mejoras en la documentación de los `Makefiles`
+---
 
-## Objetivos del Makefile
+## 📘 Diferencia entre Librería y Ejercicio
 
-1. `make` compila el `main.c` y `prueba.c`.
-2. `make run` ejecuta `main.c`.
-3. `make test` ejecuta `prueba.c`.
-4. `make clean` limpia los compilados e intermedios.
-5. `make librerias` compila todas las librerías.
-6. `make ejercicio1` compila el ejercicio 1 (y el 2 o 3 cambiando el número)
+Para mantener el código ordenado y modular, el proyecto se divide estrictamente en dos conceptos:
 
-_Luego de que carguen las librerías, no olviden compilarlas antes de darles uso en los ejercicios._
+### 1. Librería (ubicadas en `libs/`)
+* **Qué es:** Un módulo con funciones y estructuras reutilizables (por ejemplo, utilidades de cadenas o arreglos).
+* **Cómo compila:** No produce un programa ejecutable independiente. Se compila como una biblioteca estática (`lib<nombre>.a`).
+* **Uso:** Está pensada para ser consumida por uno o varios ejercicios. 
+* **Pruebas:** Contiene un archivo `prueba.c` para testear el comportamiento interno de sus funciones de forma aislada.
 
-Recuerden no enviar al repositorio los compilados (`.exe`) e intermedios (`.o`/`.a`), para ello usen `make clean` en la
-raíz del proyecto.
+### 2. Ejercicio (ubicados en `ejercicios/`)
+* **Qué es:** Un programa ejecutable autónomo que resuelve una consigna concreta del trabajo práctico.
+* **Cómo compila:** Produce un binario ejecutable (`programa`) que contiene la función `main` en `main.c`.
+* **Uso:** Puede importar y enlazar dinámicamente las librerías ubicadas en `libs/`.
+* **Pruebas:** Contiene su propio `prueba.c` (compila a `test_bin`) para validar la resolución específica de la consigna.
+* **Origen:** Se crean y gestionan únicamente de forma local (no se permiten desde repositorios remotos).
 
+---
+
+## 🛠️ Uso del Gestor de Consola (`tp.sh`)
+
+Podés gestionar todo el TP de forma dinámica usando el script de Bash `./tp.sh`. 
+
+### Comandos Comunes
+
+* **Sincronizar y generar Makefiles:**
+  ```bash
+  ./tp.sh sync
+  ```
+  Escanea el proyecto y regenera los `Makefile` de la raíz, de las librerías y de los ejercicios. Esto permite usar `make` de forma nativa sin intermediar con el script.
+
+* **Listar estado del proyecto:**
+  ```bash
+  ./tp.sh list
+  ```
+  Muestra qué librerías y ejercicios tenés instalados, junto con sus dependencias declaradas.
+
+* **Agregar una Librería Local (crea plantilla):**
+  ```bash
+  ./tp.sh add-lib mi_libreria
+  ```
+
+* **Agregar una Librería desde un Repositorio Remoto:**
+  ```bash
+  ./tp.sh add-lib mi_libreria https://github.com/usuario/repo-libreria.git
+  ```
+
+* **Agregar un Ejercicio Local indicando dependencias:**
+  ```bash
+  ./tp.sh add-ex ejercicio4 cadenas,arreglos
+  ```
+
+* **Compilar todo el proyecto:**
+  ```bash
+  ./tp.sh build
+  ```
+
+* **Ejecutar un ejercicio:**
+  ```bash
+  ./tp.sh run ejercicio1
+  ```
+
+* **Ejecutar todos los tests:**
+  ```bash
+  ./tp.sh test
+  ```
+
+* **Ejecutar tests de una librería o ejercicio específico:**
+  ```bash
+  ./tp.sh test cadenas
+  ./tp.sh test ejercicio1
+  ```
+
+* **Eliminar un ejercicio o librería:**
+  ```bash
+  ./tp.sh remove-ex ejercicio4
+  ./tp.sh remove-lib mi_libreria
+  ```
+
+---
+
+## 🎨 Personalización de los Makefiles (`local.mk`)
+
+Todos los `Makefile` generados (raíz, librerías y ejercicios) usan asignaciones débiles (`?=`) para variables clave como `CC` y `CFLAGS`, e incluyen de forma opcional un archivo llamado `local.mk`.
+
+Si querés personalizar la compilación de un módulo sin modificar su `Makefile` principal (evitando que tus cambios se sobrescriban al sincronizar), podés crear un archivo `local.mk` al lado del `Makefile` respectivo:
+
+* **Ejemplo en un ejercicio (`ejercicios/ejercicio1/local.mk`)**:
+  ```makefile
+  # Forzar el compilador clang y optimización -O3
+  CC = clang
+  CFLAGS += -O3
+  ```
+  El gestor ignora los archivos `local.mk`, por lo que tus configuraciones de compilación personalizadas se mantendrán intactas.
+
+---
+
+## ⚠️ Limpieza y Repositorio
+
+Evitá subir archivos compilados (`.o`, `.a`, ejecutables). Antes de subir tus cambios al repositorio, corré:
+```bash
+make clean
+```
+O simplemente:
+```bash
+./tp.sh build
+```
+*(El gestor se encarga de limpiar todo lo que no va si corrés `make clean`)*

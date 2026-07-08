@@ -1,23 +1,22 @@
 # Variables generales
-CC = gcc
+CC ?= gcc
+CFLAGS ?= -Wall -Wextra -pedantic -g
 
-# Opciones de compilación
-CFLAGS = -Wall -Wextra -pedantic -g
+# Nombres de las librerías que usa este ejercicio (separadas por espacio)
+LIB_NAME ?= cadenas
 
-# Nombres de las librerías (sin el prefijo lib y la extensión .a)
-LIB_NAME = cadenas
-
-# Directorios de las librerías generados a partir de los nombres
-LIB_DIR = $(addprefix ../,$(LIB_NAME))
+# Directorio raíz del proyecto para referenciar libs
+ROOT_DIR = ../..
+LIB_DIR = $(addprefix $(ROOT_DIR)/libs/,$(LIB_NAME))
 
 # Archivos de las librerías
 LIBRARY = $(addprefix -l,$(LIB_NAME))
 LIBRARY_DIRS = $(addprefix -L,$(LIB_DIR))
 INCLUDE_DIRS = $(addprefix -I,$(LIB_DIR))
 
-# Archivos comunes (código fuente y cabeceras)
-SRCS = stack.c
-HDRS = stack.h
+# Archivos comunes (código fuente y cabeceras del ejercicio)
+SRCS = $(filter-out main.c prueba.c, $(wildcard *.c))
+HDRS = $(wildcard *.h)
 
 # Objetivo del programa principal
 PROG_TARGET = programa
@@ -61,4 +60,7 @@ test: $(TEST_TARGET)
 .PHONY: clean
 clean:
 	@echo "Limpiando archivos objeto y ejecutables..."
-	rm -f $(PROG_OBJS) $(TEST_OBJS) $(SRCS:.c=.o) $(PROG_TARGET) $(TEST_TARGET)
+	rm -f *.o $(PROG_TARGET) $(TEST_TARGET)
+
+# Incluir personalizaciones locales si existen
+-include local.mk

@@ -5,6 +5,6 @@
  * Cohorte 2024
  */
 
-#include "ejercicio.h"
+#include "lista.h"
 
 // Reemplazar este comentario por las funciones del ejercicio.
