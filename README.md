@@ -2,6 +2,11 @@
 
 Este proyecto está preparado para gestionar de forma dinámica ejercicios y librerías de programación 1.
 
+Este proyecto, está pensado para ser utilizado dentro del [INGCOM-UNRN-P1/entorno](https://github.com/INGCOM-UNRN-P1/entorno)
+al utilizar bash y algunas otras herramientas solo presentes en el mismo.
+
+Pueden consultar el manual detallado del entorno en el [repositorio oficial del entorno](https://github.com/INGCOM-UNRN-P1/entorno) y la ayuda del gestor de consola ejecutando `./tp.sh help`.
+
 ---
 
 ## 📘 Diferencia entre Librería y Ejercicio
@@ -12,7 +17,10 @@ Para mantener el código ordenado y modular, el proyecto se divide estrictamente
 * **Qué es:** Un módulo con funciones y estructuras reutilizables (por ejemplo, utilidades de cadenas o arreglos).
 * **Cómo compila:** No produce un programa ejecutable independiente. Se compila como una biblioteca estática (`lib<nombre>.a`).
 * **Uso:** Está pensada para ser consumida por uno o varios ejercicios. 
-* **Pruebas:** Contiene un archivo `prueba.c` para testear el comportamiento interno de sus funciones de forma aislada.
+* **Formatos Soportados:**
+  * **Librerías Planas (Locales):** Creadas localmente con `./tp.sh add-lib <nombre>`. Tienen sus archivos fuentes `.c` y `.h` sueltos en la raíz de su carpeta y compilan su biblioteca estática directamente allí.
+  * **Librerías Estructuradas (Remotas):** Clonadas de repositorios basados en **plantilla-libreria** usando `./tp.sh add-lib <nombre> <url_git>`. Mantienen su estructura compleja (`src/`, `include/`, `tests/`), su especificación en `library.spec` y su propio `Makefile` autónomo. Los ejercicios resuelven automáticamente los directorios de headers y biblioteca apuntando a `include/` y `build/` respectivamente.
+
 
 ### 2. Ejercicio (ubicados en `ejercicios/`)
 * **Qué es:** Un programa ejecutable autónomo que resuelve una consigna concreta del trabajo práctico.

@@ -191,12 +191,13 @@ LIB_NAME ?= $dependencias
 
 # Directorio raíz del proyecto para referenciar libs
 ROOT_DIR = ../..
-LIB_DIR = \$(addprefix \$(ROOT_DIR)/libs/,\$(LIB_NAME))
 
 # Archivos de las librerías
 LIBRARY = \$(addprefix -l,\$(LIB_NAME))
-LIBRARY_DIRS = \$(addprefix -L,\$(LIB_DIR))
-INCLUDE_DIRS = \$(addprefix -I,\$(LIB_DIR))
+
+# Detección dinámica de los directorios de headers y biblioteca según el esquema (plano o estructurado)
+INCLUDE_DIRS = \$(foreach lib,\$(LIB_NAME),\$(if \$(wildcard \$(ROOT_DIR)/libs/\$(lib)/include),-I\$(ROOT_DIR)/libs/\$(lib)/include,-I\$(ROOT_DIR)/libs/\$(lib)))
+LIBRARY_DIRS = \$(foreach lib,\$(LIB_NAME),\$(if \$(wildcard \$(ROOT_DIR)/libs/\$(lib)/build),-L\$(ROOT_DIR)/libs/\$(lib)/build,\$(if \$(wildcard \$(ROOT_DIR)/libs/\$(lib)/lib),-L\$(ROOT_DIR)/libs/\$(lib)/lib,-L\$(ROOT_DIR)/libs/\$(lib))))
 
 # Archivos comunes (código fuente y cabeceras del ejercicio)
 SRCS = \$(filter-out main.c prueba.c, \$(wildcard *.c))
@@ -259,14 +260,18 @@ sync_project() {
     escribir_makefile_raiz
     echo -e "Makefile principal -> ${VERDE}Regenerado${NC}"
     
-    # 2. Regenerar Makefiles de librerías
+    # 2. Regenerar Makefiles de librerías (solo si son planas, es decir, sin estructura compleja)
     if [ -d "$LIBS_DIR" ]; then
         for dir in "$LIBS_DIR"/*; do
             if [ -d "$dir" ]; then
                 local lib_nombre
                 lib_nombre=$(basename "$dir")
-                escribir_makefile_lib "$dir"
-                echo -e "Librería '$lib_nombre' -> ${VERDE}Makefile Sincronizado${NC}"
+                if [ -f "$dir/library.spec" ] || [ -f "$dir/library.json" ] || [ -d "$dir/src" ] || [ -d "$dir/include" ]; then
+                    echo -e "Librería estructurada '$lib_nombre' -> ${AMARILLO}Se conserva su Makefile original${NC}"
+                else
+                    escribir_makefile_lib "$dir"
+                    echo -e "Librería plana '$lib_nombre' -> ${VERDE}Makefile Sincronizado${NC}"
+                fi
             fi
         done
     fi
@@ -315,6 +320,42 @@ add_lib() {
         local url="$2"
         echo -e "${AZUL}Clonando librería remota desde: $url...${NC}"
         git clone "$url" "$destino"
+        
+        # Validar y corregir nombre de directorio si difiere del especificado en la librería estructurada
+        local nombre_real="$nombre"
+        if [ -f "$destino/library.spec" ]; then
+            local spec_lib_name
+            spec_lib_name=$(grep -E '^LIB_NAME=' "$destino/library.spec" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r' | xargs)
+            if [ -n "$spec_lib_name" ]; then
+                nombre_real="$spec_lib_name"
+            fi
+        elif [ -f "$destino/library.json" ]; then
+            local json_lib_name
+            if command -v jq &> /dev/null; then
+                json_lib_name=$(jq -r '.name' "$destino/library.json")
+            else
+                json_lib_name=$(grep -E '"name":' "$destino/library.json" | head -n1 | cut -d':' -f2 | tr -d '"' | tr -d ',' | tr -d ' ' | tr -d '\r')
+            fi
+            if [ -n "$json_lib_name" ]; then
+                nombre_real="$json_lib_name"
+            fi
+        fi
+        
+        if [ "$nombre" != "$nombre_real" ]; then
+            echo -e "${AMARILLO}Advertencia: El nombre solicitado '$nombre' no coincide con el nombre real de la librería '$nombre_real'.${NC}"
+            local nuevo_destino="$LIBS_DIR/$nombre_real"
+            if [ -d "$nuevo_destino" ]; then
+                echo -e "${ROJO}Error: El directorio destino '$nuevo_destino' ya existe. No se puede renombrar.${NC}"
+                rm -rf "$destino"
+                exit 1
+            else
+                mv "$destino" "$nuevo_destino"
+                destino="$nuevo_destino"
+                nombre="$nombre_real"
+                echo -e "${VERDE}Se renombró el directorio de la librería a '$nombre'.${NC}"
+            fi
+        fi
+        
         # Regenerar Makefiles después de clonar
         sync_project
         echo -e "${VERDE}Librería '$nombre' clonada con éxito en '$destino'.${NC}"
