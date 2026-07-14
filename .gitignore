@@ -50,3 +50,10 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Specific TP executable targets
+programa
+test_bin
+programa.exe
+test_bin.exe
+
