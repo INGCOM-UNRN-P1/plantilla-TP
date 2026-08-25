@@ -33,6 +33,9 @@ mostrar_ayuda() {
     echo -e "  ${VERDE}run [ejercicio]${NC}                 Ejecuta un ejercicio en particular o todos si no indicás nada."
     echo -e "  ${VERDE}test [nombre]${NC}                   Ejecuta los tests de un ejercicio o librería específica,"
     echo -e "                                    o de todo el proyecto si no indicás nada."
+    echo -e "  ${VERDE}ripley [modulo]${NC}                 Audita con el motor Ripley (análisis AST, reglas P1 y"
+    echo -e "                                    AddressSanitizer) un ejercicio, librería o archivo .c,"
+    echo -e "                                    o todo el proyecto si no indicás nada."
     echo -e "  ${VERDE}help${NC}                            Muestra este mensaje de ayuda."
 }
 
@@ -606,6 +609,68 @@ test_project() {
     fi
 }
 
+# Auditar con el motor Ripley (Fase 3: integración entorno ↔ ripley)
+resolver_ripley() {
+    if command -v ripley >/dev/null 2>&1; then
+        RIPLEY_CMD=(ripley)
+    elif [ -n "${PORTABLE_ROOT:-}" ] && [ -x "$PORTABLE_ROOT/bin/ripley" ]; then
+        RIPLEY_CMD=("$PORTABLE_ROOT/bin/ripley")
+    elif [ -n "${PORTABLE_ROOT:-}" ] && [ -f "$PORTABLE_ROOT/bin/ripley.pyz" ]; then
+        if command -v python3 >/dev/null 2>&1; then
+            RIPLEY_CMD=(python3 "$PORTABLE_ROOT/bin/ripley.pyz")
+        elif command -v python >/dev/null 2>&1; then
+            RIPLEY_CMD=(python "$PORTABLE_ROOT/bin/ripley.pyz")
+        else
+            return 1
+        fi
+    else
+        return 1
+    fi
+}
+
+ripley_project() {
+    if ! resolver_ripley; then
+        echo -e "${ROJO}Error: El motor Ripley no está disponible en este entorno.${NC}"
+        echo "Actualizá el entorno portable (update-env.sh) para descargar ripley.pyz,"
+        echo "o instalalo manualmente con: uv tool install git+https://github.com/martinvilu/ripley"
+        exit 1
+    fi
+
+    if [ -n "${1:-}" ]; then
+        local target="$1"
+        if [ -d "$EX_DIR/$target" ]; then
+            echo -e "${AZUL}Auditando ejercicio: $target...${NC}"
+            "${RIPLEY_CMD[@]}" check "$EX_DIR/$target"
+        elif [ -d "$LIBS_DIR/$target" ]; then
+            echo -e "${AZUL}Auditando librería: $target...${NC}"
+            "${RIPLEY_CMD[@]}" check "$LIBS_DIR/$target"
+        elif [ -f "$target" ] && [[ "$target" == *.c ]]; then
+            echo -e "${AZUL}Auditando archivo: $target...${NC}"
+            "${RIPLEY_CMD[@]}" check "$target"
+        else
+            echo -e "${ROJO}Error: No se encontró el ejercicio, la librería o el archivo .c '$target'.${NC}"
+            exit 1
+        fi
+    else
+        echo -e "${AZUL}Auditando todo el proyecto con Ripley...${NC}"
+        local fallos=0
+        local dir
+        for dir in "$LIBS_DIR"/* "$EX_DIR"/*; do
+            if [ -d "$dir" ]; then
+                echo -e "${AZUL}--- Auditando $dir ---${NC}"
+                if ! "${RIPLEY_CMD[@]}" check "$dir"; then
+                    fallos=$((fallos + 1))
+                fi
+            fi
+        done
+        if [ "$fallos" -gt 0 ]; then
+            echo -e "${ROJO}Ripley encontró observaciones en $fallos módulo(s).${NC}"
+            exit 1
+        fi
+        echo -e "${VERDE}Auditoría completa sin errores bloqueantes.${NC}"
+    fi
+}
+
 # Parsear comandos principales
 if [ $# -lt 1 ]; then
     mostrar_ayuda
@@ -642,6 +707,9 @@ case "$cmd" in
         ;;
     test)
         test_project "$@"
+        ;;
+    ripley)
+        ripley_project "$@"
         ;;
     help|--help|-h)
         mostrar_ayuda

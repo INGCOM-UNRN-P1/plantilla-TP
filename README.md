@@ -85,6 +85,13 @@ Podés gestionar todo el TP de forma dinámica usando el script de Bash `./tp.sh
   ./tp.sh test ejercicio1
   ```
 
+* **Auditar con el motor Ripley (análisis AST, reglas P1 y AddressSanitizer):**
+  ```bash
+  ./tp.sh ripley                  # audita todas las librerías y ejercicios
+  ./tp.sh ripley ejercicio1       # audita un módulo específico
+  ./tp.sh ripley main.c           # audita un archivo suelto
+  ```
+
 * **Eliminar un ejercicio o librería:**
   ```bash
   ./tp.sh remove-ex ejercicio4
