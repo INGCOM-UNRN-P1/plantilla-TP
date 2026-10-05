@@ -1,0 +1,18 @@
+# Devolución automática en cada push (sulaco): instala las herramientas del perfil estudiante con
+# mother, corre ripley sobre los ejercicios y deja la devolución en el resumen del job y, en el pull
+# request de feedback de GitHub Classroom, como comentario. No bloquea la entrega: es una devolución.
+name: Devolución automática
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  evaluar:
+    uses: INGCOM-UNRN-P1/sulaco/.github/workflows/evaluar.yml@v0.1.0
+    permissions:
+      contents: read
+      pull-requests: write
+    with:
+      ruta: ejercicios
+      perfil_ripley: strict

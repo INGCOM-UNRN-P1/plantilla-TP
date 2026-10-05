@@ -127,3 +127,13 @@ O simplemente:
 ./tp.sh build
 ```
 *(El gestor se encarga de limpiar todo lo que no va si corrés `make clean`)*
+
+## Devolución automática en GitHub
+
+`.github/workflows/devolucion.yml` llama al workflow `evaluar.yml` de
+[sulaco](https://github.com/INGCOM-UNRN-P1/sulaco) en cada push: instala las herramientas del
+perfil estudiante con mother, corre `ripley` sobre `ejercicios/` y deja la devolución en el resumen
+de la ejecución (pestaña *Actions*) y, en el pull request de feedback de GitHub Classroom, como
+comentario. No bloquea la entrega. Para cambiar la rigurosidad, editá `perfil_ripley` (`strict`,
+`relaxed` o `exam`).
+
