@@ -57,3 +57,6 @@ test_bin
 programa.exe
 test_bin.exe
 
+
+# Mocks que genera holden para P1_FALLAR_EN
+holden_mocks.c

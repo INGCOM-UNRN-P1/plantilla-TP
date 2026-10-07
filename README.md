@@ -100,6 +100,25 @@ Podés gestionar todo el TP de forma dinámica usando el script de Bash `./tp.sh
 
 ---
 
+## 🧪 Pruebas
+
+| Comando         | Qué hace                                                                                       |
+| :-------------- | :--------------------------------------------------------------------------------------------- |
+| `make test`     | Corre el `prueba.c` de cada librería y ejercicio. No corta en la primera suite que falla: al final lista las que fallaron. |
+| `make memcheck` | Lo mismo, bajo Valgrind.                                                                       |
+| `make fallos`   | Corre cada `test_bin` bajo [vasquez](https://github.com/INGCOM-UNRN-P1/vasquez) (fallos de `malloc`, `fopen`…). Si vasquez no está instalado, avisa y sigue. |
+
+Con [p1_test](https://github.com/INGCOM-UNRN-P1/treadstone) en `libs/p1_test`, los `prueba.c`
+nuevos (`./tp.sh add-lib`, `./tp.sh add-ex`) usan sus aserciones; sin p1_test usan `assert`.
+`P1_FALLAR_EN(malloc, n)` hace fallar la llamada `n` a `malloc` (también `fopen`, `fread`,
+`fwrite` y `fclose`) con los mocks de [holden](https://github.com/INGCOM-UNRN-P1/holden): el
+Makefile los genera solo si holden está instalado; si no, ese test se saltea.
+
+Una librería compila solo su `.a` con `make`: si su `prueba.c` no compila, falla su suite,
+pero los ejercicios que la usan se siguen compilando y probando.
+
+---
+
 ## 🎨 Personalización de los Makefiles (`local.mk`)
 
 Todos los `Makefile` generados (raíz, librerías y ejercicios) usan asignaciones débiles (`?=`) para variables clave como `CC` y `CFLAGS`, e incluyen de forma opcional un archivo llamado `local.mk`.
